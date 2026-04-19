@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Juego del Impostor</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f9; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        #game-container { width: 50vw; height: 50vh; min-width: 320px; min-height: 450px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; margin: 5px; }
+        input { padding: 8px; margin: 5px; width: 80%; }
+        .btn-vote { display: block; width: 100%; margin: 5px 0; background: #6c757d; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="setup">
+        <h1>Impostor</h1>
+        <input type="number" id="numJugadores" placeholder="Cantidad de jugadores" min="3">
+        <br>
+        <button onclick="generarCamposNombres()">⚙️ Nombres</button>
+        <button onclick="iniciarJuego()" style="background:#28a745;">▶ Iniciar</button>
+        <div id="nombres-container"></div>
+    </div>
+
+    <div id="pantallaJuego" style="display:none; width: 100%;">
+        <h2 id="tituloTurno">...</h2>
+        <div id="mensajeRol"></div>
+        <button id="btnSiguiente" onclick="avanzarFlujo()">Siguiente</button>
+    </div>
+</div>
+
+<script>
+    let nombresJugadores = [];
+    let turnoActual = 0;
+    let impostorIndex = 0;
+    let viendoRol = false;
+    
+    const diccionario = [
+        { palabra: "Manzana", emoji: "🍎", pista: "Es una fruta" },
+        { palabra: "Coche", emoji: "🚗", pista: "Medio de transporte" },
+        { palabra: "Playa", emoji: "🏖️", pista: "Un lugar para relajarse" },
+        { palabra: "Pizza", emoji: "🍕", pista: "Comida deliciosa" }
+    ];
+    let seleccionActual;
+
+    function generarCamposNombres() {
+        const n = parseInt(document.getElementById('numJugadores').value);
+        if(!n || n < 3) return alert("Pon el número de jugadores primero");
+        const cont = document.getElementById('nombres-container');
+        cont.innerHTML = "<h3>Nombres:</h3>";
+        for(let i=0; i<n; i++) cont.innerHTML += `<input type="text" class="input-nombre" placeholder="Jugador ${i+1}">`;
+    }
+
+    function iniciarJuego() {
+        const inputs = document.querySelectorAll('.input-nombre');
+        nombresJugadores = inputs.length > 0 ? Array.from(inputs).map(i => i.value || "Jugador") : ["Jugador 1", "Jugador 2", "Jugador 3"];
+        if (nombresJugadores.length < 3) return alert("Mínimo 3 jugadores");
+
+        impostorIndex = Math.floor(Math.random() * nombresJugadores.length);
+        seleccionActual = diccionario[Math.floor(Math.random() * diccionario.length)];
+        turnoActual = 0;
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('pantallaJuego').style.display = 'block';
+        avanzarFlujo();
+    }
+
+    function avanzarFlujo() {
+        if (turnoActual >= nombresJugadores.length) {
+            mostrarVotacion();
+            return;
+        }
+
+        if (!viendoRol) {
+            document.getElementById('tituloTurno').innerText = "Turno de: " + nombresJugadores[turnoActual];
+            document.getElementById('mensajeRol').innerHTML = "<p>Pásale el dispositivo a " + nombresJugadores[turnoActual] + "</p>";
+            document.getElementById('btnSiguiente').innerText = "Ver mi rol";
+            viendoRol = true;
+        } else {
+            if (turnoActual === impostorIndex) {
+                document.getElementById('mensajeRol').innerHTML = "<h2 style='color:red;'>¡ERES EL IMPOSTOR!</h2><p>Pista: " + seleccionActual.pista + "</p>";
+            } else {
+                let txt = seleccionActual.emoji ? seleccionActual.emoji + " " + seleccionActual.palabra : seleccionActual.palabra;
+                document.getElementById('mensajeRol').innerHTML = "<h2 style='color:green;'>Eres Ciudadano</h2><p>Palabra: <strong>" + txt + "</strong></p>";
+            }
+            document.getElementById('btnSiguiente').innerText = "Ocultar y pasar";
+            viendoRol = false;
+            turnoActual++;
+        }
+    }
+
+    function mostrarVotacion() {
+        let html = "<h3>¿Quién es el impostor?</h3>";
+        nombresJugadores.forEach((nombre, index) => {
+            html += `<button class="btn-vote" onclick="finalizar('${nombre}', ${index === impostorIndex})">${nombre}</button>`;
+        });
+        document.getElementById('tituloTurno').innerText = "¡VOTACIÓN!";
+        document.getElementById('mensajeRol').innerHTML = html;
+        document.getElementById('btnSiguiente').style.display = 'none';
+    }
+
+    function finalizar(nombre, esImpostor) {
+        let resultado = esImpostor ? "¡Correcto! " + nombre + " era el impostor." : "¡Error! " + nombre + " era inocente. El impostor era " + nombresJugadores[impostorIndex];
+        document.getElementById('mensajeRol').innerHTML = `<h2>${resultado}</h2><button onclick='location.reload()'>Jugar otra vez</button>`;
+    }
+</script>
+
+</body>
+</html>
